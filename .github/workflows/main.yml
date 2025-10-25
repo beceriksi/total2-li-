@@ -1,0 +1,27 @@
+name: Altcoin Signal Bot
+
+on:
+  schedule:
+    - cron: "0 * * * *"  # Her saat başı çalışır
+  workflow_dispatch:  # Manuel başlatma
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Kodları al
+        uses: actions/checkout@v3
+
+      - name: Python kur
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Bağımlılıkları yükle
+        run: pip install ccxt pandas numpy requests
+
+      - name: Çalıştır
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          CHAT_ID: ${{ secrets.CHAT_ID }}
+        run: python main.py
