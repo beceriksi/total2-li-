@@ -1,7 +1,7 @@
 import ccxt
 import pandas as pd
 import numpy as np
-import time, os, requests
+import os, requests
 
 TOKEN = os.getenv("TELEGRAM_TOKEN")
 CHAT_ID = os.getenv("CHAT_ID")
@@ -24,21 +24,17 @@ def ema(values, period):
 exchange = ccxt.mexc()
 markets = exchange.load_markets()
 
-# === TOTAL2 MARKET FİLTRESİ ===
-total2 = exchange.fetch_ohlcv('TOTAL2/USDT', timeframe='1h', limit=100)
-if total2:
-    df = pd.DataFrame(total2, columns=['time','open','high','low','close','volume'])
-    df['ema20'] = ema(df['close'], 20)
-    df['ema50'] = ema(df['close'], 50)
-    market_up = df['ema20'].iloc[-1] > df['ema50'].iloc[-1]
-else:
-    market_up = True  # yedek: veri alınamazsa engelleme yok
+# === BTC/USDT MARKET DURUMU ===
+btc_data = exchange.fetch_ohlcv('BTC/USDT', timeframe='1h', limit=100)
+df = pd.DataFrame(btc_data, columns=['time','open','high','low','close','volume'])
+df['ema20'] = ema(df['close'], 20)
+df['ema50'] = ema(df['close'], 50)
+market_up = df['ema20'].iloc[-1] > df['ema50'].iloc[-1]
 
 if not market_up:
-    send_telegram("❌ Piyasa zayıf (TOTAL2 EMA20 < EMA50). Sinyal yok.")
+    send_telegram("❌ BTC EMA20 < EMA50 — Piyasa zayıf, sinyal yok.")
     exit()
 
-# === ALTCOİN SİNYALLERİ ===
 signals = []
 for symbol in markets:
     if not symbol.endswith("/USDT"):
@@ -72,6 +68,6 @@ for symbol in markets:
         continue
 
 if signals:
-    send_telegram("🔥 TOTAL2 Pozitif — Olası AL Sinyalleri:\n" + "\n".join(signals[:30]))
+    send_telegram("🔥 BTC Pozitif — Olası AL Sinyalleri:\n" + "\n".join(signals[:30]))
 else:
-    send_telegram("ℹ️ TOTAL2 Pozitif ama güçlü altcoin sinyali bulunamadı.")
+    send_telegram("ℹ️ BTC Pozitif ama güçlü sinyal yok.")
