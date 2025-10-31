@@ -24,16 +24,14 @@ def ema(values, period):
 exchange = ccxt.mexc()
 markets = exchange.load_markets()
 
-# === BTC/USDT MARKET DURUMU ===
+# === BTC Trend Kontrolü ===
 btc_data = exchange.fetch_ohlcv('BTC/USDT', timeframe='1h', limit=100)
 df = pd.DataFrame(btc_data, columns=['time','open','high','low','close','volume'])
 df['ema20'] = ema(df['close'], 20)
 df['ema50'] = ema(df['close'], 50)
 market_up = df['ema20'].iloc[-1] > df['ema50'].iloc[-1]
 
-if not market_up:
-    send_telegram("❌ BTC EMA20 < EMA50 — Piyasa zayıf, sinyal yok.")
-    exit()
+market_status = "✅ BTC Trend Pozitif" if market_up else "⚠️ BTC Trend Zayıf"
 
 signals = []
 for symbol in markets:
@@ -67,7 +65,8 @@ for symbol in markets:
     except Exception:
         continue
 
+# === Mesaj Gönder ===
 if signals:
-    send_telegram("🔥 BTC Pozitif — Olası AL Sinyalleri:\n" + "\n".join(signals[:30]))
+    send_telegram(f"{market_status}\n🔥 Olası AL Sinyalleri:\n" + "\n".join(signals[:30]))
 else:
-    send_telegram("ℹ️ BTC Pozitif ama güçlü sinyal yok.")
+    send_telegram(f"{market_status}\nℹ️ Sinyal Bulunamadı.")
